@@ -3,9 +3,9 @@
 <package format="3">
   <name>icart_mini_driver</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
-  <maintainer email="yaruo0406@gmail.com">haru</maintainer>
-  <license>TODO: License declaration</license>
+  <description>ROS 2 wrapper for ypspur </description>
+  <maintainer email="yaruo0406@gmail.com">Haruyama Kenta</maintainer>
+  <license>BSD</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
