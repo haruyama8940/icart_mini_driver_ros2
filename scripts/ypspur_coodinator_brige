@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+
+# Author : Haruyama kenta
+
+ypspur-coordinator -p $1 -d /dev/sensors/icart-mini &
+echo "robot parameters [$1] loaded"
