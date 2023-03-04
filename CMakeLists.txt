@@ -3,6 +3,8 @@ project(icart_mini_driver)
 
 
 find_package(ament_cmake_auto REQUIRED)
+
+
 ament_auto_find_build_dependencies()
 
  
@@ -13,17 +15,23 @@ ament_auto_find_build_dependencies()
 ament_auto_add_executable(icart_mini_driver
           src/icart_mini_driver_node.cpp)
 
-target_link_libraries(icart_mini_driver)
+target_link_libraries(icart_mini_driver ypspur)
 
 target_include_directories(icart_mini_driver
        PUBLIC ${ypspur_INCLUDE_DIRS})
 
-install(DIRECTORY launch
-  DESTINATION share/${PROJECT_NAME})
+# install(FILES scripts/ypspur_coordinator_bridge
+#   DESTINATION ${PROJECT_NAME}/scripts)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-ament_auto_package()
+ament_auto_package(
+  INSTALL_TO_SHARE
+  config
+  launch
+  # scripts
+
+)
