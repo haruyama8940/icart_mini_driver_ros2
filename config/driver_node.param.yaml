@@ -1,0 +1,4 @@
+odom_id: odom
+base_link_id: base_footprint
+hz: 100
+publish_odom_tf: false
