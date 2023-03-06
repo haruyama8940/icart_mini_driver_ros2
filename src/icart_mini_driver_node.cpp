@@ -10,7 +10,7 @@
 
 namespace YP
 {
-#include <ypspur.h>
+#include "ypspur.h"
 }
 
 class Icart_mini_driver : public rclcpp::Node
@@ -22,7 +22,6 @@ class Icart_mini_driver : public rclcpp::Node
             // odom_pub_timer_ = this->create_wall_timer(500ms,std::bind(&Icart_mini_driver::odometry,this));
             cmd_vel_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
                 "cmd_vel", 10, std::bind(&Icart_mini_driver::cmd_vel_cb, this, std::placeholders::_1));
-            
         }
         // setParam();
         // getParam();
@@ -32,12 +31,14 @@ class Icart_mini_driver : public rclcpp::Node
         void read_param();
         // void bringup_ypspur(std::vector<std::string> args);
         void bringup_ypspur();
-        void odometry();
+        // void odometry();
         // void jointstate();
         bool loop();
         
+        
     
     private:
+    
         geometry_msgs::msg::Twist::SharedPtr cmd_vel_;
         rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub_;
         rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
@@ -64,7 +65,7 @@ class Icart_mini_driver : public rclcpp::Node
         cmd_vel_ =  msg;
         RCLCPP_INFO(this->get_logger(),"sub cmd_vel");
         // https://github.com/openspur/yp-spur/blob/master/doc/Manpage.control.md#velocity-control
-        YP::YPSpur_vel(msg->linear.x,msg->angular.z);
+        // YP::YPSpur_vel(msg->linear.x,msg->angular.z);
     }
     //this function is set ypspur_param and bringup ypspur_coordinator
     // void Icart_mini_driver::bringup_ypspur(std::vector<std::string> args)
@@ -79,6 +80,7 @@ class Icart_mini_driver : public rclcpp::Node
     //         };
     //     system("ypspur-coordinator -p  -d /dev/sensors/icart-mini");
         RCLCPP_INFO(this->get_logger(),"Bringup ypspur!!");
+        // YP::YPSpur_vel(0.0,0.0);
         // YP::YPSpur_set_vel(0.0);
     
     }
@@ -136,13 +138,31 @@ class Icart_mini_driver : public rclcpp::Node
         bool test_flag = true;
         // double dt = 1.0/0.5;
         bringup_ypspur();
+        RCLCPP_INFO(this->get_logger(),"Start ypspur loop!!");
+        rclcpp::WallRate loop(100);
         while (test_flag)
         {
           RCLCPP_INFO(this->get_logger(),"Start ypspur loop!!");
-          odometry();
-          YP::YPSpur_vel(cmd_vel_->linear.x,cmd_vel_->angular.z);
+          // odometry();
+          // YP::YPSpur_vel(cmd_vel_->linear.x,cmd_vel_->angular.z);
+          loop.sleep();
+        /*
+          int state = YP::YP_get_error_state();
+          if (state == 0)
+          {
+          //   // odometry();
+            YP::YPSpur_vel(cmd_vel_->linear.x,cmd_vel_->angular.z);
+          }
+          else
+          {
+            RCLCPP_WARN(this->get_logger(),"Disconnected T-frog driver");
+            bringup_ypspur();
+          //     return false;
+          // }
+          }
+           loop.sleep();
+        */
         }
-        
         // int state = YP::YP_get_error_state();
         // if (state == 0){
         //   // odometry();

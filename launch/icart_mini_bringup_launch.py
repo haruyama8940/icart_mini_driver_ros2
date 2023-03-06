@@ -7,7 +7,8 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
     icart_mini_driver_dir = get_package_share_directory('icart_mini_driver')
-    icart_mini_param = os.path.join(icart_mini_driver_dir,'config','icart_mini.param.yaml')
+    ypspur_param = os.path.join(icart_mini_driver_dir,'config','icart_mini.param')
+    driver_param = os.path.join(icart_mini_driver_dir,'config','driver_node.param.yaml')
     return LaunchDescription([
         launch.actions.LogInfo(
             msg="Launch ypspur coordinator."
@@ -18,12 +19,13 @@ def generate_launch_description():
         #     executable='ypspur_coordinator_bridge',
         #     parameters=[icart_mini_param]
         # ),
-         launch.actions.LogInfo(
+        launch.actions.LogInfo(
             msg="Launch icart_mini_mini_driver node."
         ),
         Node(
             package='icart_mini_driver',
-            namespace='icart_mini_driver',
+            # namespace='icart_mini_driver',
             executable='icart_mini_driver',
+            # parameters=[driver_param]
         )
     ])
