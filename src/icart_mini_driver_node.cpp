@@ -27,12 +27,11 @@ class Icart_mini_driver : public rclcpp::Node
         }
         // setParam();
         // getParam();
-      
         // geometry_msgs::msg::Twist::ConstPtr cmd_vel_;
         // void cmd_vel_cb(const geometry_msgs::msg::Twist::SharedPtr msg);
         void read_param();
         void reset_param();
-        void bringup_ypspur(std::vector<std::string> args);
+        // void bringup_ypspur(std::vector<std::string> args);
         void bringup_ypspur();
         void odometry();
         // void jointstate();
@@ -42,7 +41,7 @@ class Icart_mini_driver : public rclcpp::Node
     
     private:
     
-        geometry_msgs::msg::Twist::SharedPtr cmd_vel_;
+        geometry_msgs::msg::Twist::SharedPtr cmd_vel_ = std::make_shared<geometry_msgs::msg::Twist>();
         rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub_;
         rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
         nav_msgs::msg::Odometry odom;
@@ -60,7 +59,7 @@ class Icart_mini_driver : public rclcpp::Node
           cmd_vel_ =  msg;
           RCLCPP_INFO(this->get_logger(),"sub cmd_vel");
         // https://github.com/openspur/yp-spur/blob/master/doc/Manpage.control.md#velocity-control
-        YP::YPSpur_vel(msg->linear.x,msg->angular.z);
+          YP::YPSpur_vel(msg->linear.x,msg->angular.z);
         }
         
 };
@@ -70,7 +69,6 @@ class Icart_mini_driver : public rclcpp::Node
 
     }
     //this function is set ypspur_param and bringup ypspur_coordinator
-    // void Icart_mini_driver::bringup_ypspur(std::vector<std::string> args)
     void Icart_mini_driver::bringup_ypspur()
     {
     //     std::vector<std::string> args =
@@ -81,13 +79,18 @@ class Icart_mini_driver : public rclcpp::Node
     //           "--msq-key", std::to_string(key_)
     //         };
     //     system("ypspur-coordinator -p  -d /dev/sensors/icart-mini");
-    
-        RCLCPP_INFO(this->get_logger(),"Bringup ypspur!!");
-        // YP::YPSpur_vel(0.0,0.0);
-        // YP::YPSpur_set_vel(0.0);
-
-    
+        if(YP::YPSpur_init()>0)
+        {
+          RCLCPP_INFO(this->get_logger(),"Bringup ypspur!!");
+          YP::YPSpur_stop();
+          YP::YPSpur_free();
+        }
+        else 
+        {
+           RCLCPP_WARN(this->get_logger(),"Disconnected ypspur");
+        }
     }
+
     //this function is compute odometry and pub odometry topic , odom tf
     void Icart_mini_driver::odometry()
     {
@@ -128,10 +131,8 @@ class Icart_mini_driver : public rclcpp::Node
         z_axis_.setX(0);
         z_axis_.setY(0);
         z_axis_.setZ(1);
-        // double liner_x = 0.0;
-        // double angular = 0.0;
-        // cmd_vel_->linear.x = 0.0;
-        // cmd_vel_->angular.z  = 0.0;
+        cmd_vel_->linear.x = 0.0;
+        cmd_vel_->angular.z  = 0.0;
         odom.pose.pose.position.x = 0;
         odom.pose.pose.position.y = 0;
         odom.pose.pose.position.z = 0;
@@ -145,7 +146,7 @@ class Icart_mini_driver : public rclcpp::Node
     {
       if (!YP::YP_get_error_state())
       {
-          // odometry();
+          odometry();
             // YP::YPSpur_vel(cmd_vel_->linear.x,cmd_vel_->angular.z);
            RCLCPP_INFO(this->get_logger(),"Connect ypspur!!");
       }
