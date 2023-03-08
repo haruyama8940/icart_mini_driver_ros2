@@ -8,10 +8,8 @@
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 
-namespace YP
-{
+
 #include <ypspur.h>
-}
 
 class Icart_mini_driver : public rclcpp::Node
 {
@@ -59,7 +57,7 @@ class Icart_mini_driver : public rclcpp::Node
           cmd_vel_ =  msg;
           RCLCPP_INFO(this->get_logger(),"sub cmd_vel");
         // https://github.com/openspur/yp-spur/blob/master/doc/Manpage.control.md#velocity-control
-          YP::YPSpur_vel(msg->linear.x,msg->angular.z);
+          Spur_vel(msg->linear.x,msg->angular.z);
         }
         
 };
@@ -79,11 +77,11 @@ class Icart_mini_driver : public rclcpp::Node
     //           "--msq-key", std::to_string(key_)
     //         };
     //     system("ypspur-coordinator -p  -d /dev/sensors/icart-mini");
-        if(YP::YPSpur_init()>0)
+        if(YPSpur_init()>0)
         {
           RCLCPP_INFO(this->get_logger(),"Bringup ypspur!!");
-          YP::YPSpur_stop();
-          YP::YPSpur_free();
+          YPSpur_stop();
+          YPSpur_free();
         }
         else 
         {
@@ -144,7 +142,7 @@ class Icart_mini_driver : public rclcpp::Node
     //main loop function
     bool Icart_mini_driver::loop()
     {
-      if (!YP::YP_get_error_state())
+      if (!YP_get_error_state())
       {
           odometry();
             // YP::YPSpur_vel(cmd_vel_->linear.x,cmd_vel_->angular.z);
