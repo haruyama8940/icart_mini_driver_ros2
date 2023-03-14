@@ -34,8 +34,10 @@ class Icart_mini_driver : public rclcpp::Node
         void odometry();
         // void jointstate();
         bool loop();
-        int Hz = 100;
-        
+        // int Hz = 100;
+        std::string odom_frame_id;
+        std::string base_frame_id;
+        int loop_hz;
     
     private:
     
@@ -64,7 +66,14 @@ class Icart_mini_driver : public rclcpp::Node
     // this function is read ypspur_param file from yaml
     void Icart_mini_driver::read_param()
     {  
-
+      declare_parameter("odom_frame_id","odom");
+      declare_parameter("base_frame_id","base_footprint");
+      declare_parameter("Hz","100");
+      
+      get_parameter("odom_frame_id",odom_frame_id);
+      get_parameter("base_frame_id",base_frame_id);
+      get_parameter("Hz",loop_hz);
+      
     }
     //this function is set ypspur_param and bringup ypspur_coordinator
     void Icart_mini_driver::bringup_ypspur()
@@ -94,19 +103,36 @@ class Icart_mini_driver : public rclcpp::Node
     {
         //odom
         double x,y,yaw,v,w;
+        bool odom_from_cmd_vel = false;
+        bool odom_from_ypspur_function = true;
         z_axis_.setX(0);
         z_axis_.setY(0);
         z_axis_.setZ(1);
         rclcpp::Time t = this->now();
         const rclcpp::Time current_stamp(t);
-        v = cmd_vel_->linear.x;
-        w = cmd_vel_->angular.z;
-        yaw = tf2::getYaw(odom.pose.pose.orientation) + dt * w;
-        x = odom.pose.pose.position.x + dt * v * cosf(yaw);
-        y = odom.pose.pose.position.y + dt * v * sinf(yaw);
+        
+        //compute odom from cmd_vel
+        if (odom_from_cmd_vel && !odom_from_ypspur_function)
+        {
+          v = cmd_vel_->linear.x;
+          w = cmd_vel_->angular.z;
+          yaw = tf2::getYaw(odom.pose.pose.orientation) + dt * w;
+          x = odom.pose.pose.position.x + dt * v * cosf(yaw);
+          y = odom.pose.pose.position.y + dt * v * sinf(yaw);
+        }
+        //compute odom from ypspur's function
+        if (odom_from_ypspur_function && !odom_from_cmd_vel)
+        {
+          YPSpur_get_pos(CS_BS,&x,&y,&yaw);
+          YPSpur_get_vel(&v,&w);
+        }
+        
+        //publish odom
         odom.header.stamp = current_stamp;
-        odom.header.frame_id = "odom";
-        odom.child_frame_id = "base_footprint";
+        // odom.header.frame_id = "odom";
+        // odom.child_frame_id = "base_footprint";
+        odom.header.frame_id = odom_frame_id;
+        odom.child_frame_id = base_frame_id;
         odom.pose.pose.position.x = x;
         odom.pose.pose.position.y = y;
         odom.pose.pose.position.z = 0;
