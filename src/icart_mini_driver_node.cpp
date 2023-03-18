@@ -23,7 +23,7 @@ class Icart_mini_driver : public rclcpp::Node
 
             // odom_pub_timer_ = this->create_wall_timer(500ms,std::bind(&Icart_mini_driver::odometry,this));
             cmd_vel_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
-                "cmd_vel", 1, std::bind(&Icart_mini_driver::cmd_vel_cb, this, std::placeholders::_1));
+                "cmd_vel", 10, std::bind(&Icart_mini_driver::cmd_vel_cb, this, std::placeholders::_1));
         }
         // setParam();
         // getParam();
@@ -45,7 +45,6 @@ class Icart_mini_driver : public rclcpp::Node
         int loop_hz;
     
     private:
-    
         geometry_msgs::msg::Twist::SharedPtr cmd_vel_ = std::make_shared<geometry_msgs::msg::Twist>();
         rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub_;
         rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
@@ -66,16 +65,16 @@ class Icart_mini_driver : public rclcpp::Node
           cmd_vel_ =  msg;
           RCLCPP_INFO(this->get_logger(),"sub cmd_vel");
         // https://github.com/openspur/yp-spur/blob/master/doc/Manpage.control.md#velocity-control
-          Spur_vel(msg->linear.x,msg->angular.z);
+          Spur_vel(-(msg->linear.x),msg->angular.z);
         }
         
 };
     // this function is read ypspur_param file from yaml
     void Icart_mini_driver::read_param()
-    {  
+    { 
       declare_parameter("odom_frame_id","odom");
       declare_parameter("base_frame_id","base_footprint");
-      declare_parameter("Hz","100");
+      declare_parameter("Hz",10);
       declare_parameter("left_wheel_joint","left_wheel_joint");
       declare_parameter("right_wheel_joint","right_wheel_joint");
       get_parameter("odom_frame_id",odom_frame_id);
@@ -84,6 +83,7 @@ class Icart_mini_driver : public rclcpp::Node
       get_parameter("right_wheel_joint",right_wheel_joint);
 
       get_parameter("Hz",loop_hz);
+      RCLCPP_INFO(this->get_logger(),"Set param!!");
       
     }
      void Icart_mini_driver::reset_param()
@@ -104,23 +104,20 @@ class Icart_mini_driver : public rclcpp::Node
         js.name.push_back(left_wheel_joint);
         js.name.push_back(right_wheel_joint);
         js.position.resize(2);
+        js.velocity.resize(2);
     }
     //this function is set ypspur_param and bringup ypspur_coordinator
     void Icart_mini_driver::bringup_ypspur()
     {
-    //     std::vector<std::string> args =
-    //         {
-    //           ypspur_bin_,
-    //           "-d", port_,
-    //           "--admask", ad_mask,
-    //           "--msq-key", std::to_string(key_)
-    //         };
-    //     system("ypspur-coordinator -p  -d /dev/sensors/icart-mini");
-        if(YPSpur_init()>0)
+        if(Spur_init()>0)
         {
           RCLCPP_INFO(this->get_logger(),"Bringup ypspur!!");
-          YPSpur_stop();
-          YPSpur_free();
+          Spur_stop();
+          Spur_free();
+          Spur_set_vel(1.5);
+          Spur_set_accel(1.0);
+          Spur_set_angvel(3.14);
+          Spur_set_angaccel(3.14);
         }
         else 
         {
@@ -167,8 +164,10 @@ class Icart_mini_driver : public rclcpp::Node
         //compute odom from ypspur's function
         if (odom_from_ypspur_function && !odom_from_cmd_vel)
         {
-          YPSpur_get_pos(CS_GL,&x,&y,&yaw);
-          YPSpur_get_vel(&v,&w);
+          
+          Spur_get_pos_GL(&x,&y,&yaw);
+          // Spur_get_pos(CS_GL,&x,&y,&yaw);
+          Spur_get_vel(&v,&w);
         }
         
         //publish odom
@@ -202,7 +201,7 @@ class Icart_mini_driver : public rclcpp::Node
       {
           odometry();
           joint_states();
-            // YP::YPSpur_vel(cmd_vel_->linear.x,cmd_vel_->angular.z);
+          // Spur_vel(cmd_vel_->linear.x,cmd_vel_->angular.z);
           RCLCPP_INFO(this->get_logger(),"Connect ypspur!!");
       }
       else
@@ -222,8 +221,9 @@ int main(int argc, char * argv[])
   auto icart = std::make_shared<Icart_mini_driver>();
 // //   rclcpp::shutdown();
   rclcpp::WallRate looprate(100);
-  icart->bringup_ypspur();
   icart->reset_param();
+  icart->read_param();
+  icart->bringup_ypspur();
   // icart->loop();
   // rclcpp::spin(icart);
   while (rclcpp::ok())
