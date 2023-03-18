@@ -43,6 +43,7 @@ class Icart_mini_driver : public rclcpp::Node
         std::string left_wheel_joint;
         std::string right_wheel_joint;
         int loop_hz;
+        double liner_vel_lim,liner_accel_lim,angular_vel_lim,angular_accel_lim;
     
     private:
         geometry_msgs::msg::Twist::SharedPtr cmd_vel_ = std::make_shared<geometry_msgs::msg::Twist>();
@@ -77,11 +78,19 @@ class Icart_mini_driver : public rclcpp::Node
       declare_parameter("Hz",10);
       declare_parameter("left_wheel_joint","left_wheel_joint");
       declare_parameter("right_wheel_joint","right_wheel_joint");
+      declare_parameter("liner_vel_lim",1.5);
+      declare_parameter("liner_accel_lim",1.5);
+      declare_parameter("angular_vel_lim",3.14);
+      declare_parameter("angular_accel_lim",3.14);
+      
       get_parameter("odom_frame_id",odom_frame_id);
       get_parameter("base_frame_id",base_frame_id);
       get_parameter("left_wheel_joint",left_wheel_joint);
       get_parameter("right_wheel_joint",right_wheel_joint);
-
+      get_parameter("liner_vel_lim",liner_vel_lim);
+      get_parameter("liner_accel_lim",liner_accel_lim);
+      get_parameter("angular_vel_lim",angular_vel_lim);
+      get_parameter("angular_accel_lim",angular_accel_lim);
       get_parameter("Hz",loop_hz);
       RCLCPP_INFO(this->get_logger(),"Set param!!");
       
@@ -114,10 +123,10 @@ class Icart_mini_driver : public rclcpp::Node
           RCLCPP_INFO(this->get_logger(),"Bringup ypspur!!");
           Spur_stop();
           Spur_free();
-          Spur_set_vel(1.5);
-          Spur_set_accel(1.0);
-          Spur_set_angvel(3.14);
-          Spur_set_angaccel(3.14);
+          Spur_set_vel(liner_vel_lim);
+          Spur_set_accel(liner_accel_lim);
+          Spur_set_angvel(angular_vel_lim);
+          Spur_set_angaccel(angular_accel_lim);
         }
         else 
         {
