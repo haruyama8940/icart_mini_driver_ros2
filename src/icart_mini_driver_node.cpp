@@ -70,7 +70,7 @@ class Icart_mini_driver : public rclcpp::Node
         }
         
 };
-    // this function is read ypspur_param file from yaml
+    // this function is read node's param file from yaml
     void Icart_mini_driver::read_param()
     { 
       declare_parameter("odom_frame_id","odom");
@@ -95,6 +95,7 @@ class Icart_mini_driver : public rclcpp::Node
       RCLCPP_INFO(this->get_logger(),"Set param!!");
       
     }
+
      void Icart_mini_driver::reset_param()
     {
         z_axis_.setX(0);
@@ -123,6 +124,7 @@ class Icart_mini_driver : public rclcpp::Node
           RCLCPP_INFO(this->get_logger(),"Bringup ypspur!!");
           Spur_stop();
           Spur_free();
+          Spur_set_pos_GL(0,0,0);
           Spur_set_vel(liner_vel_lim);
           Spur_set_accel(liner_accel_lim);
           Spur_set_angvel(angular_vel_lim);
@@ -134,21 +136,25 @@ class Icart_mini_driver : public rclcpp::Node
         }
     }
 
-    //this function is compute odometry and pub odometry topic , odom tf
+    //this function is compute odometry and pub joint_states
     void Icart_mini_driver::joint_states()
     {
         rclcpp::Time js_t = this->now();
         const rclcpp::Time current_stamp_js(js_t);
         double l_ang_pos{},r_ang_pos{},l_wheel_vel{},r_wheel_vel{};
+        
+        //get current ang and vel from ypspur's function
         YP_get_wheel_ang(&l_ang_pos,&r_ang_pos);
         YP_get_wheel_vel(&l_wheel_vel,&r_wheel_vel);
         js.header.stamp = current_stamp_js;
+        js.header.frame_id = "base_link";
         js.position[0] = l_ang_pos;
         js.position[1] = r_ang_pos;
         js.velocity[0] = l_wheel_vel;
         js.velocity[1] = r_wheel_vel;
         js_pub_->publish(js);
     }
+     //this function is compute odometry and pub odometry topic , odom tf
     void Icart_mini_driver::odometry()
     {
         //odom
@@ -196,6 +202,8 @@ class Icart_mini_driver : public rclcpp::Node
 
         //odom_tf
         odom_trans.header.stamp = current_stamp + rclcpp::Duration::from_seconds(tf_time_offset_);
+        odom_trans.header.frame_id = odom_frame_id;
+        odom_trans.child_frame_id = base_frame_id;
         odom_trans.transform.translation.x = x;
         odom_trans.transform.translation.y = y;
         odom_trans.transform.translation.z = 0;
@@ -229,9 +237,10 @@ int main(int argc, char * argv[])
 //   Icart_mini_driver icart;
   auto icart = std::make_shared<Icart_mini_driver>();
 // //   rclcpp::shutdown();
-  rclcpp::WallRate looprate(100);
-  icart->reset_param();
+  rclcpp::WallRate looprate(icart->loop_hz);
   icart->read_param();
+  icart->reset_param();
+ 
   icart->bringup_ypspur();
   // icart->loop();
   // rclcpp::spin(icart);
@@ -244,3 +253,4 @@ int main(int argc, char * argv[])
   
   return 0;
 }
+
