@@ -44,7 +44,7 @@ class Icart_mini_driver : public rclcpp::Node
         std::string right_wheel_joint;
         int loop_hz;
         double liner_vel_lim,liner_accel_lim,angular_vel_lim,angular_accel_lim;
-    
+        bool odom_from_ypspur, debug_mode=false;
     private:
         geometry_msgs::msg::Twist::SharedPtr cmd_vel_ = std::make_shared<geometry_msgs::msg::Twist>();
         rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub_;
@@ -53,8 +53,8 @@ class Icart_mini_driver : public rclcpp::Node
         sensor_msgs::msg::JointState js;
         nav_msgs::msg::Odometry odom;
         //devel odom
-        float dt = 1.0 / 100;
-        double tf_time_offset_ =0.0;
+        float dt = 1.0 / loop_hz;
+        double tf_time_offset_ = 0.0; 
         tf2::Vector3 z_axis_;
         
         std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
@@ -64,7 +64,7 @@ class Icart_mini_driver : public rclcpp::Node
         void cmd_vel_cb(const geometry_msgs::msg::Twist::SharedPtr msg)
         {
           cmd_vel_ =  msg;
-          RCLCPP_INFO(this->get_logger(),"sub cmd_vel");
+        // RCLCPP_INFO(this->get_logger(),"sub cmd_vel");
         // https://github.com/openspur/yp-spur/blob/master/doc/Manpage.control.md#velocity-control
           Spur_vel(-(msg->linear.x),msg->angular.z);
         }
@@ -82,6 +82,8 @@ class Icart_mini_driver : public rclcpp::Node
       declare_parameter("liner_accel_lim",1.5);
       declare_parameter("angular_vel_lim",3.14);
       declare_parameter("angular_accel_lim",3.14);
+      declare_parameter("calculate_odom_from_ypspur",true);
+      declare_parameter("debug_mode",false);
       
       get_parameter("odom_frame_id",odom_frame_id);
       get_parameter("base_frame_id",base_frame_id);
@@ -92,6 +94,8 @@ class Icart_mini_driver : public rclcpp::Node
       get_parameter("angular_vel_lim",angular_vel_lim);
       get_parameter("angular_accel_lim",angular_accel_lim);
       get_parameter("Hz",loop_hz);
+      get_parameter("calculate_odom_from_ypspur",odom_from_ypspur);
+      get_parameter("debug_mode",debug_mode);
       RCLCPP_INFO(this->get_logger(),"Set param!!");
       
     }
@@ -141,8 +145,8 @@ class Icart_mini_driver : public rclcpp::Node
         rclcpp::Time js_t = this->now();
         const rclcpp::Time current_stamp_js(js_t);
         double l_ang_pos{},r_ang_pos{},l_wheel_vel{},r_wheel_vel{};
-        YP_get_wheel_ang(&l_ang_pos,&r_ang_pos);
-        YP_get_wheel_vel(&l_wheel_vel,&r_wheel_vel);
+        YP_get_wheel_ang(&l_ang_pos, &r_ang_pos);
+        YP_get_wheel_vel(&l_wheel_vel, &r_wheel_vel);
         js.header.stamp = current_stamp_js;
         js.header.frame_id = "base_link";
         js.position[0] = -l_ang_pos;
@@ -155,16 +159,22 @@ class Icart_mini_driver : public rclcpp::Node
     {
         //odom
         double x,y,yaw,v,w;
-        bool odom_from_cmd_vel = false;
-        bool odom_from_ypspur_function = true;
         z_axis_.setX(0);
         z_axis_.setY(0);
         z_axis_.setZ(1);
         rclcpp::Time t = this->now();
         const rclcpp::Time current_stamp(t);
         
+        //compute odom from ypspur's function
+        if (odom_from_ypspur)
+        {
+          
+          Spur_get_pos_GL(&x,&y,&yaw);
+          Spur_get_vel(&v,&w);
+        }
+        
         //compute odom from cmd_vel
-        if (odom_from_cmd_vel && !odom_from_ypspur_function)
+        else
         {
           v = cmd_vel_->linear.x;
           w = cmd_vel_->angular.z;
@@ -172,19 +182,9 @@ class Icart_mini_driver : public rclcpp::Node
           x = odom.pose.pose.position.x + dt * v * cosf(yaw);
           y = odom.pose.pose.position.y + dt * v * sinf(yaw);
         }
-        //compute odom from ypspur's function
-        if (odom_from_ypspur_function && !odom_from_cmd_vel)
-        {
-          
-          Spur_get_pos_GL(&x,&y,&yaw);
-          // Spur_get_pos(CS_GL,&x,&y,&yaw);
-          Spur_get_vel(&v,&w);
-        }
-        
+    
         //publish odom
         odom.header.stamp = current_stamp;
-        // odom.header.frame_id = "odom";
-        // odom.child_frame_id = "base_footprint";
         odom.header.frame_id = odom_frame_id;
         odom.child_frame_id = base_frame_id;
         odom.pose.pose.position.x = -x;
@@ -205,6 +205,9 @@ class Icart_mini_driver : public rclcpp::Node
         odom_trans.transform.translation.z = 0;
         odom_trans.transform.rotation = odom.pose.pose.orientation;
         tf_broadcaster_->sendTransform(odom_trans);
+
+        //if debug_mode
+        //if (debug_mode)
     }
    
     //main loop function
@@ -214,8 +217,7 @@ class Icart_mini_driver : public rclcpp::Node
       {
           odometry();
           joint_states();
-          // Spur_vel(cmd_vel_->linear.x,cmd_vel_->angular.z);
-          RCLCPP_INFO(this->get_logger(),"Connect ypspur!!");
+          // RCLCPP_INFO(this->get_logger(),"Connect ypspur!!");
       }
       else
       {
@@ -233,7 +235,7 @@ int main(int argc, char * argv[])
 //   Icart_mini_driver icart;
   auto icart = std::make_shared<Icart_mini_driver>();
 // //   rclcpp::shutdown();
-  rclcpp::WallRate looprate(100);
+  rclcpp::WallRate looprate(icart->loop_hz);
   icart->read_param();
   icart->reset_param();
   icart->bringup_ypspur();
