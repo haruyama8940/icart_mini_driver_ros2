@@ -20,24 +20,15 @@ class Icart_mini_driver : public rclcpp::Node
             odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>("odom",1);
             js_pub_ = this->create_publisher<sensor_msgs::msg::JointState>("joint_states",1);
             tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
-
-            // odom_pub_timer_ = this->create_wall_timer(500ms,std::bind(&Icart_mini_driver::odometry,this));
             cmd_vel_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
                 "cmd_vel", 10, std::bind(&Icart_mini_driver::cmd_vel_cb, this, std::placeholders::_1));
         }
-        // setParam();
-        // getParam();
-        // geometry_msgs::msg::Twist::ConstPtr cmd_vel_;
-        // void cmd_vel_cb(const geometry_msgs::msg::Twist::SharedPtr msg);
         void read_param();
         void reset_param();
-        // void bringup_ypspur(std::vector<std::string> args);
         void bringup_ypspur();
         void joint_states();
         void odometry();
-        // void jointstate();
         bool loop();
-        // int Hz = 100;
         std::string odom_frame_id;
         std::string base_frame_id;
         std::string left_wheel_joint;
@@ -52,7 +43,6 @@ class Icart_mini_driver : public rclcpp::Node
         rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr js_pub_;
         sensor_msgs::msg::JointState js;
         nav_msgs::msg::Odometry odom;
-        //devel odom
         float dt = 1.0 / loop_hz;
         double tf_time_offset_ = 0.0; 
         tf2::Vector3 z_axis_;
