@@ -64,13 +64,11 @@ class Icart_mini_driver : public rclcpp::Node
         void cmd_vel_cb(const geometry_msgs::msg::Twist::SharedPtr msg)
         {
           cmd_vel_ =  msg;
-        // RCLCPP_INFO(this->get_logger(),"sub cmd_vel");
-        // https://github.com/openspur/yp-spur/blob/master/doc/Manpage.control.md#velocity-control
           Spur_vel(-(msg->linear.x),msg->angular.z);
         }
         
 };
-    // this function is read ypspur_param file from yaml
+    // this function is read and set ypspur_param
     void Icart_mini_driver::read_param()
     { 
       declare_parameter("odom_frame_id","odom");
@@ -99,6 +97,7 @@ class Icart_mini_driver : public rclcpp::Node
       RCLCPP_INFO(this->get_logger(),"Set param!!");
       
     }
+    // this function is initialize various parameters
      void Icart_mini_driver::reset_param()
     {
         z_axis_.setX(0);
@@ -139,7 +138,7 @@ class Icart_mini_driver : public rclcpp::Node
         }
     }
 
-    //this function is compute odometry and pub odometry topic , odom tf
+    //this function is set and pub joint_states
     void Icart_mini_driver::joint_states()
     {
         rclcpp::Time js_t = this->now();
@@ -155,6 +154,7 @@ class Icart_mini_driver : public rclcpp::Node
         js.velocity[1] = r_wheel_vel;
         js_pub_->publish(js);
     }
+    //this function is compute odometry and pub odometry topic , odom tf
     void Icart_mini_driver::odometry()
     {
         //odom
@@ -217,7 +217,7 @@ class Icart_mini_driver : public rclcpp::Node
       {
           odometry();
           joint_states();
-          // RCLCPP_INFO(this->get_logger(),"Connect ypspur!!");
+     
       }
       else
       {
@@ -234,13 +234,12 @@ int main(int argc, char * argv[])
   rclcpp::init(argc, argv);
 //   Icart_mini_driver icart;
   auto icart = std::make_shared<Icart_mini_driver>();
-// //   rclcpp::shutdown();
+
   rclcpp::WallRate looprate(icart->loop_hz);
   icart->read_param();
   icart->reset_param();
   icart->bringup_ypspur();
-  // icart->loop();
-  // rclcpp::spin(icart);
+    
   while (rclcpp::ok())
   {
     icart->loop();
