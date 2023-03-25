@@ -26,30 +26,33 @@
 - `joint_states` ([sensor_msgs/JointState](http://docs.ros.org/en/melodic/api/sensor_msgs/html/msg/JointState.html))
   - ypspurから取得した，左右輪の角度，角速度を提供します． 
 # Parameters
-- `odom_frame_id`(string default:odom)
+- `odom_frame_id`(string default: odom)
   - odomトピック，tfトピックで用いるオドメトリ座標系のフレームIDを設定します
-- `base_frame_id`(string default:base_footprint)
+- `base_frame_id`(string default: base_footprint)
   - odomトピック，tfトピックで用いるロボットの基準フレームIDを設定します  
   base_footprintやbase_linkなどを設定してください
 - `Hz`(int default:100)
   - ノードのループ周期を設定します． 
-- `left_wheel_joint`(string default:left_wheel_joint)
+- `left_wheel_joint`(string default: left_wheel_joint)
   - joint_statesトピックで使用する左車輪の名前を設定します 
-- `right_wheel_joint`(string default:right_wheel_joint)
+- `right_wheel_joint`(string default: right_wheel_joint)
   - joint_statesトピックで使用する右車輪の名前を設定します 
-- `liner_vel_lim`(double default:1.5)
+- `liner_vel_lim`(double default: 1.5)
   - ロボットの速度の上限を設定します．  
   config上で設定したypspurのparamと同じ値にすることをした推奨します．
-- `liner_accel_lim`(double default:1.5)
+- `liner_accel_lim`(double default: 1.5)
   - ロボットの加速度の上限を設定します．  
   config上で設定したypspurのparamと同じ値にすることをした推奨します．
-- `angular_vel_lim`(double default:3.14)
+- `angular_vel_lim`(double default: 3.14)
   - ロボットの角速度の上限を設定します．  
   config上で設定したypspurのparamと同じ値にすることをした推奨します．
-- `angular_accel_lim`(double default:3.14)
+- `angular_accel_lim`(double default: 3.14)
   - ロボットの角加速度の上限を設定します．  
   config上で設定したypspurのparamと同じ値にすることをした推奨します．
-- `calculate_odom_from_ypspur`(bool default:true)
+- `calculate_odom_from_ypspur`(bool default: true)
+  - odomの計算方法を設定します
+    - true: ypspurの関数と実測値を用いて計算します
+    - false: cmd_velから計算します
 # install
 ```
 git clone https://github.com/haruyama8940/icart_mini_driver
