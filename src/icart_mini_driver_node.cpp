@@ -23,7 +23,7 @@ class Icart_mini_driver : public rclcpp::Node
 
             // odom_pub_timer_ = this->create_wall_timer(500ms,std::bind(&Icart_mini_driver::odometry,this));
             cmd_vel_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
-                "cmd_vel", 100, std::bind(&Icart_mini_driver::cmd_vel_cb, this, std::placeholders::_1));
+                "cmd_vel", 10, std::bind(&Icart_mini_driver::cmd_vel_cb, this, std::placeholders::_1));
         }
         // setParam();
         // getParam();
