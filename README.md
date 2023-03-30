@@ -51,11 +51,26 @@
   config上で設定したypspurのparamと同じ値にすることを推奨します．
 - `calculate_odom_from_ypspur`(bool default: true)
   - odomの計算方法を設定します
-    - true: ypspurの関数と実測値を用いて計算します
-    - false: cmd_velから計算します
-# install
+    - true: ypspurの関数と実測値を用いて，odomを計算します
+    - false: cmd_velからodomを計算します
+# Install
 ```
 git clone https://github.com/haruyama8940/icart_mini_driver
 git clone https://github.com/openspur/yp-spur
 git clone https://github.com/ros2/teleop_twist_joy
 ```
+# Build
+```
+cd install_your_workspace
+colcon build --symlink-install
+```
+# Run
+```
+ros2 launch icart_mini_driver icart_mini_bringup_launch.py
+```
+# Notes
+- odom，tf，joint_stateではモータの取り付けの向きによって，座標を調整する必要があります．
+rvizなどで可視化しながら，進行方向と一致するように調整してください．
+(後にパラメータ化します)
+
+
