@@ -39,16 +39,16 @@
   - joint_statesトピックで使用する右車輪の名前を設定します 
 - `liner_vel_lim`(double default: 1.5)
   - ロボットの速度の上限を設定します．  
-  config上で設定したypspurのparamと同じ値にすることをした推奨します．
+  config上で設定したypspurのparamと同じ値にすることを推奨します．
 - `liner_accel_lim`(double default: 1.5)
   - ロボットの加速度の上限を設定します．  
-  config上で設定したypspurのparamと同じ値にすることをした推奨します．
+  config上で設定したypspurのparamと同じ値にすることを推奨します．
 - `angular_vel_lim`(double default: 3.14)
   - ロボットの角速度の上限を設定します．  
-  config上で設定したypspurのparamと同じ値にすることをした推奨します．
+  config上で設定したypspurのparamと同じ値にすることを推奨します．
 - `angular_accel_lim`(double default: 3.14)
   - ロボットの角加速度の上限を設定します．  
-  config上で設定したypspurのparamと同じ値にすることをした推奨します．
+  config上で設定したypspurのparamと同じ値にすることを推奨します．
 - `calculate_odom_from_ypspur`(bool default: true)
   - odomの計算方法を設定します
     - true: ypspurの関数と実測値を用いて計算します
