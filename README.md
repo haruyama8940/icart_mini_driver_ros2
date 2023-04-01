@@ -72,5 +72,5 @@ ros2 launch icart_mini_driver icart_mini_bringup_launch.py
 - odom，tf，joint_stateではモータの取り付けの向きによって，座標を調整する必要があります．
 rvizなどで可視化しながら，進行方向と一致するように調整してください．
 (後にパラメータ化します)
-
+- scripts内に存在するypspur_coordinator_bridgeに関して，接続しているデバイス(ttyACM0 or icart-mini)を適宜選択する必要があります．
 
