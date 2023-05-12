@@ -1,5 +1,5 @@
 # icart_mini_drive
-このリポジトリはypspurのROS 2ラッパです.  
+このリポジトリはypspurのROS ラッパです.  
 
 
 ステート：devel  
