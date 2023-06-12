@@ -28,6 +28,7 @@ def generate_launch_description():
         launch.actions.ExecuteProcess(
             cmd=[ypspur_coordinator_path,ypspur_param],
             shell=True,
+            output='screen'
 
         ),
 
@@ -38,6 +39,7 @@ def generate_launch_description():
             package='icart_mini_driver',
             # namespace='icart_mini_driver',
             executable='icart_mini_driver',
+            output='screen'
             # parameters=[driver_param]
         )
     ])

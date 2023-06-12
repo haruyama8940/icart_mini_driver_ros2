@@ -2,13 +2,13 @@
 #include "geometry_msgs/msg/twist.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
-
+// #include <memory>
 #include <tf2/utils.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
-
+#include <chrono>
 
 #include <ypspur.h>
 
@@ -22,6 +22,8 @@ class Icart_mini_driver : public rclcpp::Node
             tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
             cmd_vel_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
                 "cmd_vel", 10, std::bind(&Icart_mini_driver::cmd_vel_cb, this, std::placeholders::_1));
+            loop_timer_ = this->create_wall_timer(std::chrono::milliseconds(10), std::bind(&Icart_mini_driver::loop, this));
+           
         }
         void read_param();
         void reset_param();
@@ -36,17 +38,20 @@ class Icart_mini_driver : public rclcpp::Node
         int loop_hz;
         double liner_vel_lim,liner_accel_lim,angular_vel_lim,angular_accel_lim;
         bool odom_from_ypspur, debug_mode=false;
+        // loop_ms_ = std::chrono::milliseconds{loop_hz};
+        
     private:
         geometry_msgs::msg::Twist::SharedPtr cmd_vel_ = std::make_shared<geometry_msgs::msg::Twist>();
         rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub_;
         rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
         rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr js_pub_;
+        rclcpp::TimerBase::SharedPtr loop_timer;
         sensor_msgs::msg::JointState js;
         nav_msgs::msg::Odometry odom;
         float dt = 1.0 / loop_hz;
         double tf_time_offset_ = 0.0; 
+        rclcpp::TimerBase::SharedPtr loop_timer_;
         tf2::Vector3 z_axis_;
-        
         std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
         geometry_msgs::msg::TransformStamped odom_trans;
 
@@ -54,7 +59,7 @@ class Icart_mini_driver : public rclcpp::Node
         void cmd_vel_cb(const geometry_msgs::msg::Twist::SharedPtr msg)
         {
           cmd_vel_ =  msg;
-          Spur_vel(-(msg->linear.x),msg->angular.z);
+          Spur_vel(msg->linear.x,msg->angular.z);
         }
         
 };
@@ -63,7 +68,7 @@ class Icart_mini_driver : public rclcpp::Node
     { 
       declare_parameter("odom_frame_id","odom");
       declare_parameter("base_frame_id","base_footprint");
-      declare_parameter("Hz",10);
+      declare_parameter("Hz",40);
       declare_parameter("left_wheel_joint","left_wheel_joint");
       declare_parameter("right_wheel_joint","right_wheel_joint");
       declare_parameter("liner_vel_lim",1.5);
@@ -108,7 +113,8 @@ class Icart_mini_driver : public rclcpp::Node
         js.position.resize(2);
         js.velocity.resize(2);
     }
-    //this function is set ypspur_param and bringup ypspur_coordinator
+
+    //this function is set ypspur_param
     void Icart_mini_driver::bringup_ypspur()
     {
         if(Spur_init()>0)
@@ -177,8 +183,8 @@ class Icart_mini_driver : public rclcpp::Node
         odom.header.stamp = current_stamp;
         odom.header.frame_id = odom_frame_id;
         odom.child_frame_id = base_frame_id;
-        odom.pose.pose.position.x = -x;
-        odom.pose.pose.position.y = -y;
+        odom.pose.pose.position.x = x;
+        odom.pose.pose.position.y = y;
         odom.pose.pose.position.z = 0;
         odom.pose.pose.orientation = tf2::toMsg(tf2::Quaternion(z_axis_, yaw));
         odom.twist.twist.linear.x = v;
@@ -190,8 +196,8 @@ class Icart_mini_driver : public rclcpp::Node
         odom_trans.header.stamp = current_stamp + rclcpp::Duration::from_seconds(tf_time_offset_);
         odom_trans.header.frame_id = odom_frame_id;
         odom_trans.child_frame_id = base_frame_id;
-        odom_trans.transform.translation.x = -x;
-        odom_trans.transform.translation.y = -y;
+        odom_trans.transform.translation.x = x;
+        odom_trans.transform.translation.y = y;
         odom_trans.transform.translation.z = 0;
         odom_trans.transform.rotation = odom.pose.pose.orientation;
         tf_broadcaster_->sendTransform(odom_trans);
@@ -201,7 +207,7 @@ class Icart_mini_driver : public rclcpp::Node
     }
    
     //main loop function
-    bool Icart_mini_driver::loop()
+    bool Icart_mini_driver::loop()    
     {
       if (!YP_get_error_state())
       {
@@ -209,33 +215,26 @@ class Icart_mini_driver : public rclcpp::Node
           joint_states();
      
       }
+      
       else
       {
-          RCLCPP_WARN(this->get_logger(),"Disconnected ypspur");
+          RCLCPP_WARN(this->get_logger(),"Disconnected ypspur reconnect ypspur");
           bringup_ypspur();
           return false;
       }
-
      return true;
     }
+    
 
 int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
 //   Icart_mini_driver icart;
   auto icart = std::make_shared<Icart_mini_driver>();
-
-  rclcpp::WallRate looprate(icart->loop_hz);
   icart->read_param();
   icart->reset_param();
   icart->bringup_ypspur();
-    
-  while (rclcpp::ok())
-  {
-    icart->loop();
-    rclcpp::spin_some(icart);
-    looprate.sleep();
-  }
-  
+
+  rclcpp::spin(icart);
   return 0;
 }
